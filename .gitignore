@@ -1,0 +1,39 @@
+# Локальные исходные материалы: не публикуем автоматически.
+/docs/sources/*
+
+# Секреты; пример настроек разрешён.
+.env
+.env.*
+!.env.example
+/secrets/
+*.pem
+*.key
+
+# Python и инструменты разработки.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Локальные данные приложения и резервные копии.
+*.sqlite3
+*.sqlite3-*
+*.log
+/media/
+/evidence/
+/staticfiles/
+/backups/
+*.dump
+
+# Локальные настройки редакторов и среды агента.
+.idea/
+.vscode/
+.agents/
+.aws/
+.codex/
+.DS_Store
