@@ -1,8 +1,27 @@
 from django.urls import path
 
+from . import organization_actions
 from . import workspace as v
 
 urlpatterns = [
+    path(
+        "organization/employees/<int:pk>/delete/",
+        organization_actions.delete,
+        {"kind": "employee"},
+        name="employee-delete",
+    ),
+    path(
+        "organization/systems/<int:pk>/delete/",
+        organization_actions.delete,
+        {"kind": "system"},
+        name="system-delete",
+    ),
+    path(
+        "organization/contours/<int:pk>/delete/",
+        organization_actions.delete,
+        {"kind": "contour"},
+        name="contour-delete",
+    ),
     path("workspace/", v.dashboard, name="workspace"),
     path("organization/", v.organization_card, name="organization-card"),
     path("organization/employees/new/", v.employee_edit, name="employee-create"),
@@ -10,6 +29,7 @@ urlpatterns = [
     path("organization/employees/<int:pk>/archive/", v.employee_archive, name="employee-archive"),
     path("organization/systems/new/", v.system_edit, name="system-create"),
     path("organization/systems/<int:pk>/", v.system_edit, name="system-edit"),
+    path("organization/systems/<int:pk>/archive/", v.system_archive, name="system-archive"),
     path("methodology/", v.methodology, name="methodology"),
     path("assessments/new/", v.create, name="assessment-create"),
     path("assessments/<int:pk>/", v.detail, name="assessment"),
@@ -38,6 +58,7 @@ urlpatterns = [
     path("settings/assessments/<int:pk>/assign/", v.assign, name="assessment-assign"),
     path("settings/users/new/", v.user_create, name="user-create"),
     path("settings/users/roles/", v.user_roles, name="user-roles"),
+    path("settings/users/<int:pk>/deactivate/", v.user_deactivate, name="user-deactivate"),
     path("settings/catalogs/import/", v.catalog_import, name="catalog-import"),
     path("settings/catalogs/<int:pk>/", v.catalog_detail, name="catalog"),
     path("settings/catalogs/<int:pk>/verify/", v.catalog_verify, name="catalog-verify"),

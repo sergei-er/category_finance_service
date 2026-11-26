@@ -201,6 +201,7 @@ def matrix_context(assessment, params):
             continue
         filtered.append(row)
     counts = Counter(row["status"] for row in rows)
+    unique_codes = {row["item"].snapshot.get("code") for row in rows}
     summary = {key: counts[key] for key, _ in STATUSES}
     summary.update(
         total=len(rows),
@@ -282,6 +283,7 @@ def matrix_context(assessment, params):
             for label, group in groupby(filtered, key=lambda row: row["group_label"])
         ],
         "matrix_total": len(rows),
+        "matrix_unique_total": len(unique_codes),
         "matrix_filtered_count": len(filtered),
         "matrix_counts": summary,
         "matrix_status_options": [{"value": key, "label": label} for key, label in STATUSES],

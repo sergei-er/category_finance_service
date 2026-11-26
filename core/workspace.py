@@ -224,6 +224,16 @@ def employee_archive(request, pk):
 
 
 @login_required
+@require_POST
+def system_archive(request, pk):
+    require_role(request.user, ADMIN)
+    system = get_object_or_404(InformationSystem, pk=pk, organization_id=1)
+    system.archived = True
+    system.save(update_fields=["archived"])
+    return redirect("organization-card")
+
+
+@login_required
 def system_edit(request, pk=None):
     require_role(request.user, ADMIN)
     profile = get_object_or_404(OrganizationProfile, pk=1)
@@ -744,6 +754,20 @@ def user_roles(request):
                 user.save(update_fields=["is_active"])
             return redirect("settings-home")
     return form_page(request, form, "Назначить роли / отключить доступ", back="settings-home")
+
+
+@login_required
+@require_POST
+def user_deactivate(request, pk):
+    require_role(request.user, ADMIN)
+    user = get_object_or_404(get_user_model(), pk=pk)
+    if user.pk == request.user.pk or user.is_superuser:
+        messages.error(request, "Нельзя отключить текущего или технического администратора")
+    else:
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+        messages.success(request, "Доступ пользователя отключён; история обследований сохранена.")
+    return redirect("settings-home")
 
 
 @login_required

@@ -13,7 +13,7 @@
 <a href="?tab=scores&amp;kind=lifecycle{% if matrix_filters.area %}&amp;area={{ matrix_filters.area }}{% endif %}" class="section-link{% if matrix_filters.kind == 'lifecycle' %} is-active{% endif %}">Жизненный цикл АС</a>
 </aside>
 <section class="work-center" aria-label="Опросный лист">
-<div class="work-toolbar"><h2>Опросный лист <small>{{ matrix_filtered_count }} из {{ matrix_total }} мер</small></h2><div class="toolbar-buttons"><button type="button" class="secondary" data-expand="all">Развернуть все</button><button type="button" class="secondary" data-expand="none">Свернуть все</button></div></div>
+<div class="work-toolbar"><h2>Опросный лист <small>{{ matrix_filtered_count }} из {{ matrix_total }} позиций · {{ matrix_unique_total }} уникальных мер</small></h2><div class="toolbar-buttons"><button type="button" class="secondary" data-expand="all">Развернуть все</button><button type="button" class="secondary" data-expand="none">Свернуть все</button></div></div>
 <form method="get" class="query-bar">
 <input type="hidden" name="tab" value="scores"><input type="hidden" name="area" value="{{ matrix_filters.area }}"><input type="hidden" name="contour" value="{{ matrix_filters.contour }}"><input type="hidden" name="kind" value="{{ matrix_filters.kind }}"><input type="hidden" name="process" value="{{ matrix_filters.process }}">
 <input type="search" name="q" value="{{ matrix_filters.q }}" aria-label="Поиск меры" placeholder="Код или содержание меры">
@@ -51,7 +51,7 @@
 </tbody></table></div></details>{% endfor %}</details>
 {% empty %}<div class="empty-state">{% if matrix_total %}Меры по выбранным фильтрам не найдены.<p><a href="?tab=scores">Сбросить фильтры</a></p>{% else %}Анкета появится после передачи обследования на заполнение.{% endif %}</div>{% endfor %}
 </section>
-<aside class="progress-panel"><h2>Прогресс обследования</h2><div class="progress-body"><div><div class="progress-number"><span>Заполнено</span><strong>{{ answered_percent }}%</strong></div><progress value="{{ answered_percent }}" max="100"></progress><small>{{ matrix_counts.answered }} из {{ matrix_total }} мер</small></div>
+<aside class="progress-panel"><h2>Прогресс обследования</h2><div class="progress-body"><div><div class="progress-number"><span>Заполнено позиций</span><strong>{{ answered_percent }}%</strong></div><progress value="{{ answered_percent }}" max="100"></progress><small>{{ matrix_counts.answered }} из {{ matrix_total }} позиций · {{ matrix_unique_total }} уникальных мер</small></div>
 {% for process in process_navigation %}{% if process.total %}<div class="progress-row"><div><span>{{ process.title }}</span><strong>{{ process.percent }}%</strong></div><progress value="{{ process.percent }}" max="100"></progress></div>{% endif %}{% endfor %}
 <div class="result-box"><h3>Предварительный результат</h3>{% if run and run.result.result != None %}<p class="result-value">{{ run.result.result }}</p><small>Расчёт от {{ run.created_at|date:'d.m.Y H:i' }}</small>{% else %}<p class="muted">Не определён</p>{% if run.result.issues %}<small>{{ run.result.issues.0 }}</small>{% else %}<small>Требуются утверждённые ответы.</small>{% endif %}{% endif %}<a class="button secondary" href="?tab=calculation">Результаты</a><a class="button secondary" href="?tab=evidence">Свидетельства</a></div>
 </div></aside></div>

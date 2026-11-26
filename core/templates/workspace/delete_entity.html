@@ -1,0 +1,15 @@
+{% extends 'workspace/base.html' %}
+{% block content %}
+<section class="editor">
+<h1>Удаление {{ label }}</h1>
+<p>{{ instance }}</p>
+{{ form.non_field_errors }}
+{% if blocked %}
+<p class="notice">Запись используется в профиле организации, системах, обследованиях или рекомендациях. Удаление недоступно: сначала необходимо разрешить связанные зависимости. История обследований сохраняется.</p>
+{% else %}
+<p>Запись будет удалена без возможности восстановления через интерфейс.</p>
+<form method="post">{% csrf_token %}{{ form.confirm.errors }}<p>{{ form.confirm }} {{ form.confirm.label_tag }}</p><button type="submit">Удалить</button></form>
+{% endif %}
+<p><a href="{{ back }}">Отмена — вернуться к списку</a></p>
+</section>
+{% endblock %}

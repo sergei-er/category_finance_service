@@ -15,7 +15,6 @@
   {% if form.organization %}
   <strong>{{ form.organization.name }}</strong>
   <p>{{ form.organization.description|linebreaksbr }}</p>
-  {% if form.organization.synthetic %}<p class="label">Синтетические данные для демонстрации</p>{% endif %}
   {% else %}
   <p>Профиль организации ещё не заполнен. Администратор задаёт его и создаёт контуры в настройках.</p>
   {% endif %}
@@ -47,14 +46,33 @@
   <fieldset>
     <legend>{{ form.processes.label }}</legend>
     {{ form.processes }}{{ form.processes.errors }}
-    <p class="helptext">{{ form.processes.help_text }}</p>
+    <p class="helptext">{{ form.processes.help_text }} Снимите флажок у процесса, который не входит в согласованную область обследования.</p>
   </fieldset>
-  <p><label for="{{ form.lifecycle_included.id_for_label }}">{{ form.lifecycle_included }}{{ form.lifecycle_included.label }}</label>{{ form.lifecycle_included.errors }}</p>
-  <p>{{ form.lifecycle_reason.label_tag }}{{ form.lifecycle_reason }}{{ form.lifecycle_reason.errors }}</p>
+  <fieldset>
+    <legend>Жизненный цикл автоматизированных систем</legend>
+    <p><label for="{{ form.lifecycle_included.id_for_label }}">{{ form.lifecycle_included }}{{ form.lifecycle_included.label }}</label>{{ form.lifecycle_included.errors }}</p>
+    <div id="lifecycle-reason-field">
+      <p>{{ form.lifecycle_reason.label_tag }}{{ form.lifecycle_reason }}{{ form.lifecycle_reason.errors }}<span class="helptext">{{ form.lifecycle_reason.help_text }}</span></p>
+    </div>
+  </fieldset>
 
   <div class="actions">
     <button type="submit">Создать обследование</button>
     <a href="{% url 'workspace' %}">К реестру обследований</a>
   </div>
 </form>
+<script>
+(() => {
+  const toggle = document.getElementById('{{ form.lifecycle_included.id_for_label }}');
+  const reason = document.getElementById('lifecycle-reason-field');
+  if (!toggle || !reason) return;
+  const update = () => {
+    reason.hidden = toggle.checked;
+    const input = reason.querySelector('textarea, input');
+    if (input) input.required = !toggle.checked;
+  };
+  toggle.addEventListener('change', update);
+  update();
+})();
+</script>
 {% endblock %}

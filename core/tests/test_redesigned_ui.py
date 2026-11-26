@@ -6,6 +6,7 @@ from lxml import html
 
 from assessments.forms import AssessmentForm
 from assessments.models import AnswerRevision
+from organization.models import InformationSystem
 from standards.models import CatalogVersion, RequirementVersion
 
 from . import test_workbench
@@ -24,6 +25,7 @@ class RedesignedWorkspaceTests(TestCase):
         self.assertTrue(tree.xpath('//aside[@class="process-nav"]'))
         self.assertTrue(tree.xpath('//aside[@class="progress-panel"]'))
         self.assertEqual(len(tree.xpath('//ol[@class="workflow"]/li')), 5)
+        self.assertContains(response, "уникальных мер")
         for select in tree.xpath('//select[@name="score"]'):
             form_id = select.get("form")
             forms = tree.xpath("//form[@id=$value]", value=form_id)
@@ -113,3 +115,28 @@ class RedesignedWorkspaceTests(TestCase):
         response = self.client.get(url, {"q": "TEST-34"})
         self.assertEqual(len(response.context["requirements"]), 1)
         self.assertContains(response, "TEST-34")
+
+    def test_admin_forms_use_russian_operational_labels_and_hide_synthetic_flag(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse("organization-edit"))
+        self.assertContains(response, "Ответственный за заполнение анкет")
+        self.assertContains(response, "Согласующий результаты обследований")
+        self.assertNotContains(response, "Синтетические данные")
+        response = self.client.get(reverse("system-create"))
+        self.assertContains(response, "Ответственный сотрудник")
+        self.assertContains(response, "Контур защиты")
+
+    def test_admin_can_archive_system_and_deactivate_user(self):
+        system = InformationSystem.objects.create(
+            organization=self.profile, name="Тестовая система", contour=self.contour
+        )
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse("system-archive", args=[system.pk]))
+        self.assertRedirects(response, reverse("organization-card"))
+        system.refresh_from_db()
+        self.assertTrue(system.archived)
+        response = self.client.post(reverse("user-deactivate", args=[self.employee.pk]))
+        self.assertRedirects(response, reverse("settings-home"))
+        self.employee.refresh_from_db()
+        self.assertFalse(self.employee.is_active)
+        self.assertTrue(self.assessment.items.exists())
