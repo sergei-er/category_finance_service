@@ -1,0 +1,171 @@
+{% extends 'workspace/base.html' %}
+{% block content %}
+<div class="assessment-heading">
+  <p class="breadcrumb"><a href="{% url 'workspace' %}">Все обследования</a> / №{{ assessment.pk }}</p>
+  <h1>{{ assessment.title }}</h1>
+  <p class="label">{{ assessment.get_state_display }} · {% for link in assessment.contour_links.all %}{{ link.name_snapshot }} (уровень {{ link.level_snapshot }}){% if not forloop.last %}, {% endif %}{% empty %}{{ assessment.contour.name }}{% endfor %}</p>
+  {% if assessment.catalog.synthetic or assessment.organization_snapshot.synthetic %}<span class="demo-label">Учебное обследование</span>{% endif %}
+</div>
+<ol class="workflow" aria-label="Этапы обследования">{% for step in workflow_steps %}<li class="{{ step.state }}"{% if step.state == 'current' %} aria-current="step"{% endif %}>{{ step.label }}</li>{% endfor %}</ol>
+
+<div class="actions assessment-actions">
+  {% if is_admin and assessment.catalog.synthetic %}<a class="button" href="{% url 'catalog-transition' assessment.pk %}">Создать анкету по ГОСТ вместо SYN</a>{% endif %}
+  {% if is_admin and assessment.state == 'draft' %}
+  <form method="post" action="{% url 'assessment-action' assessment.pk 'begin' %}">{% csrf_token %}<button>Передать на заполнение</button></form>
+  {% endif %}
+  {% if is_employee and working %}
+  <form method="post" action="{% url 'assessment-action' assessment.pk 'submit' %}">{% csrf_token %}<button>Отправить всю анкету на проверку</button></form>
+  {% endif %}
+  {% if is_reviewer and assessment.state == 'review' or is_reviewer and assessment.state == 'agreement' %}
+  <a href="{% url 'assessment-rework' assessment.pk %}">Вернуть на доработку</a>
+  <form method="post" action="{% url 'assessment-action' assessment.pk 'calculate' %}">{% csrf_token %}<button class="secondary">Рассчитать результат</button></form>
+  <form method="post" action="{% url 'assessment-action' assessment.pk 'approve' %}">{% csrf_token %}<button>Утвердить и зафиксировать</button></form>
+  {% endif %}
+  {% if is_reviewer and assessment.state == 'approved' %}
+  <form method="post" action="{% url 'assessment-action' assessment.pk 'close' %}">{% csrf_token %}<button>Закрыть обследование</button></form>
+  {% endif %}
+  {% if snapshot %}
+  <a href="{% url 'compare' assessment.pk %}">История этого контура</a>
+  {% if is_admin %}<a href="{% url 'assessment-create' %}?previous={{ assessment.pk }}">Новое повторное обследование</a>{% endif %}
+  {% endif %}
+</div>
+
+{% if not assessment.catalog.verified %}<p class="notice">Каталог ожидает сверки. Предварительное заполнение; нормативный расчёт и утверждение недоступны.</p>{% endif %}
+<nav class="assessment-tabs" aria-label="Разделы обследования">
+  {% for tab in matrix_tabs %}<a href="{{ tab.url }}"{% if active_tab == tab.key %} class="is-active" aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+</nav>
+
+{% if active_tab == 'card' %}
+<section aria-labelledby="card-title">
+  <h2 id="card-title">Карточка обследования</h2>
+  <dl class="assessment-facts">
+    <div><dt>Организация</dt><dd>{{ assessment.organization_snapshot.name|default:assessment.contour.organization.name }}</dd></div>
+    <div><dt>Контуры</dt><dd>{% for link in assessment.contour_links.all %}{{ link.name_snapshot }} (уровень {{ link.level_snapshot }}){% if not forloop.last %}, {% endif %}{% empty %}{{ assessment.contour.name }}{% endfor %}</dd></div>
+    <div><dt>Период</dt><dd>{{ assessment.period_start }} — {{ assessment.period_end }}</dd></div>
+    <div><dt>Системы</dt><dd>{% for system in assessment.systems.all %}{{ system.name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
+    <div><dt>Версия каталога</dt><dd>{{ assessment.catalog.title }}</dd></div>
+    <div><dt>Процессы в области</dt><dd>{{ assessment.processes|join:', ' }}</dd></div>
+    <div><dt>Сотрудник</dt><dd>{% if assessment.employee %}{{ assessment.employee.get_full_name|default:assessment.employee.username }}{% else %}Не назначен{% endif %}</dd></div>
+    <div><dt>Проверяющий</dt><dd>{% if assessment.reviewer %}{{ assessment.reviewer.get_full_name|default:assessment.reviewer.username }}{% else %}Не назначен{% endif %}</dd></div>
+    <div><dt>Жизненный цикл</dt><dd>{% if assessment.lifecycle_included %}Оценивается{% else %}Не оценивается: {{ assessment.lifecycle_reason }}{% endif %}</dd></div>
+  </dl>
+  <h3>Область обследования</h3>
+  <div class="prose">{{ assessment.scope|linebreaks }}</div>
+  {% if assessment.state == 'draft' %}
+  <p class="notice">Состав анкеты будет зафиксирован при передаче на заполнение. До этого администратор назначает сотрудника и проверяющего.</p>
+  {% else %}
+  {% include 'workspace/partials/matrix_summary.html' %}
+  <p><a class="button" href="?tab=scores">Открыть опросный лист</a></p>
+  {% endif %}
+  {% if assessment.state == 'closed' %}<p>Обследование закрыто и доступно для чтения. Следующая оценка оформляется новым обследованием.</p>{% endif %}
+</section>
+
+{% elif active_tab == 'scores' %}
+{% include 'workspace/partials/matrix_scores.html' %}
+
+{% elif active_tab == 'applicability' %}
+<section aria-labelledby="applicability-title">
+  <h2 id="applicability-title">Применимость и исключения</h2>
+  <p>Полный состав анкеты и решения по текущим версиям ответов. До одобрения исключения проверяющим мера остаётся в области оценки. Обозначение «Н» означает необязательность реализации и не является решением об исключении.</p>
+  <p>Строк в области обследования: {{ matrix_total }} · обоснований исключения: {{ applicability_request_count }} · исключено по решению: {{ matrix_counts.excluded }}.</p>
+  {% if applicability_rows %}
+  <div class="table-scroll" role="region" aria-label="Обоснования исключений" tabindex="0">
+    <table class="matrix-table applicability-table">
+      <thead><tr><th scope="col">Мера и версия</th><th scope="col">Обоснование</th><th scope="col">Решение проверяющего</th><th scope="col">Участие в оценке</th><th scope="col">Действия</th></tr></thead>
+      <tbody>{% for row in applicability_rows %}
+        <tr>
+          <td><strong>{{ row.item.snapshot.code }}</strong><small>{{ row.area_label }} · {{ row.kind_label }} · {{ row.process_label }}</small><small>{{ row.mode }} — {{ row.mode_label }}</small>{% if row.revision %}<p>Версия {{ row.revision.number }}</p>{% else %}<p>Ответ не заполнен</p>{% endif %}</td>
+          <td>{{ row.revision.exclusion_reason|default:'Исключение не запрошено'|linebreaksbr }}</td>
+          <td><span class="status-badge status-{{ row.status }}">{{ row.applicability_status }}</span>{% if row.decision %}<p>{{ row.decision.reason|linebreaksbr }}</p><small>{{ row.decision.created_at }}</small>{% endif %}</td>
+          <td>{{ row.scope_label }}</td>
+          <td>{% include 'workspace/partials/matrix_row_actions.html' %}</td>
+        </tr>
+      {% endfor %}</tbody>
+    </table>
+  </div>
+  {% else %}<div class="empty-state"><p>Состав мер ещё не зафиксирован.</p><p>Он появится после передачи обследования на заполнение.</p><a href="?tab=card">Открыть карточку</a></div>{% endif %}
+</section>
+
+{% elif active_tab == 'evidence' %}
+<section aria-labelledby="evidence-title">
+  <h2 id="evidence-title">Свидетельства обследования</h2>
+  <div class="actions">
+    {% if is_employee and working %}<a class="button" href="{% url 'evidence-upload' assessment.pk %}">Загрузить свидетельство</a>{% endif %}
+    {% if is_reviewer %}{% if working or assessment.state == 'review' %}<a class="button" href="{% url 'evidence-upload' assessment.pk %}">Добавить материал рассмотрения</a>{% endif %}{% endif %}
+  </div>
+  
+  {% for file in files %}
+  <article class="card evidence-card">
+    <h3><a href="{% url 'evidence-download' file.pk %}">{{ file.original_name }}</a></h3>
+    <p>{{ file.description|linebreaksbr }}</p>
+    <small>{{ file.size }} байт · {{ file.created_at }} · {{ file.author.username }}</small>
+    <details><summary>Контроль целостности</summary><small>SHA-256: {{ file.sha256 }}</small></details>
+    {% if working and file.author_id == user.pk %}<form method="post" action="{% url 'evidence-retire' file.pk %}">{% csrf_token %}<button class="secondary">Убрать неиспользуемый файл</button></form>{% endif %}
+  </article>
+  {% empty %}<div class="empty-state">Файлы пока не загружены.</div>{% endfor %}
+</section>
+
+{% elif active_tab == 'findings' %}
+<section aria-labelledby="findings-title">
+  <h2 id="findings-title">Факты нарушений</h2>
+  <div class="actions">
+    {% if is_employee and working %}<a class="button" href="{% url 'finding-create' assessment.pk %}">Зафиксировать факт</a>{% endif %}
+    {% if is_reviewer %}{% if working or assessment.state == 'review' %}<a class="button" href="{% url 'finding-create' assessment.pk %}">Зафиксировать факт</a>{% endif %}{% endif %}
+  </div>
+  
+  {% for fact in findings %}{% with rev=fact.current_revision %}
+  <article class="card">
+    <h3>Факт №{{ fact.pk }}, версия {{ rev.number }}</h3>
+    <p>{{ rev.description|linebreaksbr }}</p>
+    <p>Источник: {{ rev.get_source_display }}; дата {{ rev.discovered_on }}.</p>
+    {% if rev.decision %}<p>Учитывается в расчёте: <strong>{{ rev.decision.include|yesno:'да,нет' }}</strong>. {{ rev.decision.reason }}</p>{% if rev.decision.duplicate_of_id %}<p>Дубликат факта №{{ rev.decision.duplicate_of_id }}.</p>{% endif %}{% else %}<p>Ожидает решения проверяющего.</p>{% endif %}
+    <div class="actions">
+      {% if is_employee and working and fact.created_by_id == user.pk %}<a href="{% url 'finding-edit' assessment.pk fact.pk %}">Новая версия сведений</a>{% endif %}
+      {% if is_reviewer %}{% if working or assessment.state == 'review' %}<a href="{% url 'finding-edit' assessment.pk fact.pk %}">Новая версия сведений</a>{% endif %}{% if assessment.state == 'review' %}<a href="{% url 'finding-review' fact.pk %}">Решение по факту</a>{% endif %}{% endif %}
+    </div>
+    <details><summary>История факта и решений</summary>{% for old in fact.revisions.all %}<p>Версия {{ old.number }}: {{ old.description }} — {{ old.author.username }}, {{ old.created_at }}</p>{% for decision in old.decisions.all %}<p>Решение {{ decision.created_at }}: {{ decision.reason }}; учёт {{ decision.include|yesno:'да,нет' }}</p>{% endfor %}{% endfor %}</details>
+  </article>
+  {% endwith %}{% empty %}<div class="empty-state">Факты не зарегистрированы. Это не автоматическое доказательство отсутствия нарушений.</div>{% endfor %}
+</section>
+
+{% elif active_tab == 'agreement' %}
+<section><h2>Согласование результатов</h2>
+<div class="table-scroll"><table><thead><tr><th>Область оценки</th><th>Код меры</th><th>Исходная оценка</th><th>Новая оценка</th><th>Обоснование</th><th>Статус</th><th></th></tr></thead><tbody>{% for adjustment in adjustments %}<tr><td>Процесс {{ adjustment.revision.item.context_process }}</td><td>{{ adjustment.revision.item.snapshot.code }}</td><td>{{ adjustment.original_score }}</td><td>{{ adjustment.proposed_score }}</td><td>{{ adjustment.reason }}</td><td>{{ adjustment.get_status_display }}</td><td>{% if is_employee and adjustment.status == 'pending' %}<a href="{% url 'adjustment-decision' adjustment.pk %}">Рассмотреть</a>{% elif is_reviewer and adjustment.status == 'rejected' %}<a href="{% url 'review' adjustment.revision.pk %}">Рассмотреть возражение</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="7">Корректировок оценок нет.</td></tr>{% endfor %}</tbody></table></div></section>
+
+{% elif active_tab == 'history' %}
+<section><h2>История изменений</h2><div class="table-scroll"><table><thead><tr><th>Дата и время</th><th>Пользователь</th><th>Действие</th><th>Объект</th><th>Изменение</th></tr></thead><tbody>{% for event in events %}<tr><td>{{ event.created_at }}</td><td>{{ event.actor|default:'Система' }}</td><td>{{ event.action }}</td><td>{{ event.entity }} #{{ event.entity_id }}</td><td>{{ event.details }}</td></tr>{% empty %}<tr><td colspan="5">Значимые действия пока не зарегистрированы.</td></tr>{% endfor %}</tbody></table></div></section>
+
+{% elif active_tab == 'calculation' %}
+<section aria-labelledby="calculation-title">
+  <h2 id="calculation-title">Расчёт и промежуточные показатели</h2>
+  {% if run %}
+  <p>Последний расчёт №{{ run.pk }} от {{ run.created_at }} относится к сохранённым в его протоколе версиям входов.</p>
+  {% if run.result.status == 'undefined' %}<p class="notice">Общий результат не определён.</p>{% for issue in run.result.issues %}<p>{{ issue }}</p>{% endfor %}{% else %}<p class="metric">R = {{ run.result.result }}</p>{% endif %}
+  <p>Z = {{ run.result.z }} · Жизненный цикл: {% if not run.result.lifecycle_included %}не оценивается{% elif run.result.lifecycle != None %}{{ run.result.lifecycle }}{% else %}оценки приведены по группам{% endif %}</p>
+  {% if run.result.negative %}<p class="notice">Снижение за нарушения превышает среднюю оценку. Отрицательный результат сохранён.</p>{% endif %}
+  <div class="table-scroll" role="region" aria-label="Показатели процессов" tabindex="0">
+    <table><thead><tr><th scope="col">Процесс</th><th scope="col">Оценка</th><th scope="col">Уровень соответствия</th></tr></thead><tbody>{% for process in run.result.processes %}<tr><td>{{ process.process }}</td><td>{{ process.value }}</td><td>{{ process.quality }}</td></tr>{% endfor %}</tbody></table>
+  </div>
+  {% include 'workspace/partials/area_results.html' with result=run.result %}
+  <p><a class="button" href="{% url 'calculation' run.pk %}">Подробные результаты</a></p>
+  {% else %}<div class="empty-state"><p>Расчёт ещё не выполнен.</p><p>Для итогового расчёта нужны решения по текущим версиям ответов и фактам нарушений.</p></div>{% endif %}
+  
+</section>
+
+{% elif active_tab == 'report' %}
+<section aria-labelledby="report-title">
+  <h2 id="report-title">Внутренняя оценка / проект отчёта</h2>
+  {% if snapshot %}
+  <p>Результат зафиксирован {{ snapshot.created_at }}.</p>
+  <p class="metric">R = {{ snapshot.data.result.result }}</p>
+  <p><a href="{% url 'snapshot' assessment.pk %}">Посмотреть зафиксированный результат</a> · <a href="{% url 'calculation' snapshot.calculation_id %}">Протокол утверждённого расчёта</a></p>
+  {% if is_reviewer or is_employee %}
+  <div class="actions">
+    <form method="post" action="{% url 'report-export' assessment.pk 'docx' %}">{% csrf_token %}<button>Проект отчёта DOCX</button></form>
+    <form method="post" action="{% url 'report-export' assessment.pk 'xlsx' %}">{% csrf_token %}<button class="secondary">Рабочая книга XLSX</button></form>
+  </div>
+  {% endif %}
+  {% else %}<div class="empty-state"><p>Зафиксированного результата пока нет.</p><p>Проверяющий утверждает обследование после проверки полноты и выполнения расчёта.</p></div>{% endif %}
+</section>
+{% endif %}
+{% endblock %}

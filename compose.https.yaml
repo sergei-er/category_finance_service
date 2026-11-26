@@ -1,0 +1,15 @@
+# Локальный HTTPS-профиль. Сертификат и ключ создаются отдельно, не входят в Git.
+services:
+  app:
+    environment:
+      DJANGO_SETTINGS_MODULE: config.settings.production
+      DJANGO_TRUST_PROXY: "1"
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://localhost:8443,https://127.0.0.1:8443
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/', headers={'X-Forwarded-Proto':'https'}), timeout=3)"]
+  nginx:
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    ports: !override ["127.0.0.1:8443:8443"]
+    volumes:
+      - ./deploy/nginx/https.conf:/etc/nginx/nginx.conf:ro
+      - ./secrets/tls:/run/tls:ro

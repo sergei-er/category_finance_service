@@ -1,0 +1,17 @@
+{% load static %}<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Оценка соответствия{% endblock %}</title>
+<link rel="stylesheet" href="{% static 'core/workspace.css' %}?v=20261126-2">
+<script defer src="{% static 'core/workspace.js' %}?v=20261126-2"></script></head>
+<body><header class="topbar">
+<a class="brand" href="{% url 'workspace' %}"><span class="brand-mark" aria-hidden="true">✓</span>Оценка соответствия</a>
+{% if user.is_authenticated %}<nav aria-label="Основная навигация">
+<a href="{% url 'organization-card' %}"{% if '/organization/' in request.path %} class="active"{% endif %}>Организация</a>
+<a href="{% url 'workspace' %}"{% if '/assessments/' in request.path or request.path == '/workspace/' and not reports_only %} class="active"{% endif %}>Обследования</a>
+<a href="{% url 'workspace' %}?view=reports"{% if reports_only %} class="active"{% endif %}>Отчёты</a>
+{% if nav_admin %}<a href="{% url 'settings-home' %}"{% if '/settings/' in request.path %} class="active"{% endif %}>Администрирование</a>{% endif %}
+</nav><div class="account"><span>{{ user.get_full_name|default:user.username }}</span><small>{% for group in user.groups.all %}{{ group.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</small></div>
+<form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="secondary">Выйти</button></form>
+{% else %}<a href="{% url 'login' %}">Войти</a>{% endif %}</header>
+<main>{% for message in messages %}<div class="notice" role="status">{{ message }}</div>{% endfor %}{% block content %}{% endblock %}</main>
+</body></html>

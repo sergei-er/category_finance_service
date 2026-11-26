@@ -1,0 +1,23 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Сервис внутренней оценки защиты информации</title>
+  <link rel="stylesheet" href="{% static 'core/site.css' %}">
+</head>
+<body>
+<main>
+  <p class="label">Внутренняя оценка / проект отчёта</p>
+  <h1>Сервис внутренней оценки защиты информации</h1>
+  {% if development_mode %}
+  <p class="notice">Режим разработки: HTTP на localhost. Не предназначен для реальных данных.</p>
+  {% endif %}
+  <p>Учебный сервис для одной финансовой организации. Одно обследование относится к одному контуру защиты.</p>
+  <p>Рабочая область доступна назначенным пользователям. Нормативный расчёт требует проверенного каталога, подтверждённых данных и определённой области.</p>
+  <p><a class="button" href="{% url 'workspace' %}">Открыть рабочую область</a> <a href="{% url 'core:about' %}">О сервисе</a></p>
+  <footer>Сервис внутреннего обследования. Сервис не заменяет независимую оценку соответствия.</footer>
+</main>
+</body>
+</html>

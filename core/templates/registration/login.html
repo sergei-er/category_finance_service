@@ -1,0 +1,1 @@
+{% extends 'workspace/base.html' %}{% block content %}<section class="login-panel"><p class="eyebrow">Оценка соответствия</p><h1>Вход в сервис</h1><form method="post" class="editor">{% csrf_token %}{{ form.as_p }}<input type="hidden" name="next" value="{{ next }}"><button>Войти</button></form></section>{% endblock %}

@@ -1,0 +1,11 @@
+{% if result.groups %}
+<h3>Оценки по группам контуров</h3>
+{% for group in result.groups %}
+<h4>Уровень защиты {{ group.level }}</h4>
+<div class="table-scroll"><table>
+<thead><tr><th>Процесс</th><th>Выбор мер</th><th>Планирование / реализация / контроль / совершенствование</th><th>Оценка</th><th>Уровень соответствия</th></tr></thead>
+<tbody>{% for process in group.processes %}<tr><td>{{ process.process }}</td><td>{{ process.selection }}</td><td>{{ process.directions|join:' / ' }}</td><td>{{ process.value }}</td><td>{{ process.quality }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% if result.lifecycle_included %}<p>Жизненный цикл АС в группе: {{ group.lifecycle }}</p>{% endif %}
+{% endfor %}
+{% endif %}

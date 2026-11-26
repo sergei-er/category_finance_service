@@ -1,0 +1,24 @@
+{% extends 'workspace/base.html' %}
+{% block content %}
+<h1>{{ data.title }}: зафиксированный результат</h1>
+<p class="label">{{ data.label }}</p>
+{% if data.synthetic %}<p class="notice">Синтетический учебный пример. Не нормативный результат реальной организации.</p>{% endif %}
+<p>{{ data.organization.name }}</p>
+<p>Контуры: {% for contour in data.contours %}{{ contour.name_snapshot }} (уровень {{ contour.level_snapshot }}){% if not forloop.last %}; {% endif %}{% empty %}{{ data.contour.name }} · уровень {{ data.contour.level }}{% endfor %}</p>
+<p>{{ data.scope }}</p>
+<p>Период {{ data.period|join:' — ' }}; {{ data.approved_at }}; проверяющий {{ data.reviewer.name }}</p>
+<p class="metric">R = {{ data.result.result }}</p>
+<p>Z = {{ data.result.z }}; жизненный цикл {{ data.result.lifecycle|default_if_none:'не оценивается' }}.</p>
+{% include 'workspace/partials/area_results.html' with result=data.result %}
+<p>SHA-256 снимка: {{ snapshot.digest }}</p>
+<a href="{% url 'calculation' snapshot.calculation_id %}">Протокол</a>
+<a href="{% url 'assessment' snapshot.assessment_id %}">Обследование</a>
+<div class="actions">
+{% if user.pk == snapshot.assessment.reviewer_id %}
+<form method="post" action="{% url 'report-export' snapshot.assessment_id 'docx' %}">{% csrf_token %}<button>Проект отчёта DOCX</button></form>
+<form method="post" action="{% url 'report-export' snapshot.assessment_id 'xlsx' %}">{% csrf_token %}<button>Результаты XLSX</button></form>
+<form method="post" action="{% url 'report-export' snapshot.assessment_id 'json' %}">{% csrf_token %}<button>Снимок JSON</button></form>
+{% endif %}
+</div>
+<p>Экспорт доступен назначенному проверяющему. Документ не является юридически подписанным заключением.</p>
+{% endblock %}

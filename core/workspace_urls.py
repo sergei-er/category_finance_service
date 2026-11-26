@@ -1,0 +1,45 @@
+from django.urls import path
+
+from . import workspace as v
+
+urlpatterns = [
+    path("workspace/", v.dashboard, name="workspace"),
+    path("organization/", v.organization_card, name="organization-card"),
+    path("organization/employees/new/", v.employee_edit, name="employee-create"),
+    path("organization/employees/<int:pk>/", v.employee_edit, name="employee-edit"),
+    path("organization/employees/<int:pk>/archive/", v.employee_archive, name="employee-archive"),
+    path("organization/systems/new/", v.system_edit, name="system-create"),
+    path("organization/systems/<int:pk>/", v.system_edit, name="system-edit"),
+    path("methodology/", v.methodology, name="methodology"),
+    path("assessments/new/", v.create, name="assessment-create"),
+    path("assessments/<int:pk>/", v.detail, name="assessment"),
+    path(
+        "assessments/<int:pk>/catalog-transition/", v.catalog_transition, name="catalog-transition"
+    ),
+    path("assessments/<int:pk>/action/<str:operation>/", v.action, name="assessment-action"),
+    path("assessments/<int:pk>/rework/", v.rework, name="assessment-rework"),
+    path("assessments/<int:pk>/upload/", v.upload, name="evidence-upload"),
+    path("assessments/<int:pk>/findings/new/", v.finding_edit, name="finding-create"),
+    path("assessments/<int:pk>/findings/<int:finding_id>/", v.finding_edit, name="finding-edit"),
+    path("findings/<int:pk>/review/", v.finding_review, name="finding-review"),
+    path("items/<int:pk>/answer/", v.answer, name="answer"),
+    path("items/<int:pk>/history/", v.answer_history, name="answer-history"),
+    path("answers/<int:pk>/review/", v.review, name="review"),
+    path("adjustments/<int:pk>/decision/", v.adjustment_decide, name="adjustment-decision"),
+    path("files/<int:pk>/download/", v.download, name="evidence-download"),
+    path("files/<int:pk>/retire/", v.retire, name="evidence-retire"),
+    path("calculations/<int:pk>/", v.calculation, name="calculation"),
+    path("assessments/<int:pk>/result/", v.snapshot, name="snapshot"),
+    path("assessments/<int:pk>/export/<str:format>/", v.export, name="report-export"),
+    path("assessments/<int:pk>/compare/", v.compare, name="compare"),
+    path("settings/", v.settings_home, name="settings-home"),
+    path("settings/organization/", v.organization_edit, name="organization-edit"),
+    path("settings/contours/new/", v.contour_edit, name="contour-create"),
+    path("settings/assessments/<int:pk>/assign/", v.assign, name="assessment-assign"),
+    path("settings/users/new/", v.user_create, name="user-create"),
+    path("settings/users/roles/", v.user_roles, name="user-roles"),
+    path("settings/catalogs/import/", v.catalog_import, name="catalog-import"),
+    path("settings/catalogs/<int:pk>/", v.catalog_detail, name="catalog"),
+    path("settings/catalogs/<int:pk>/verify/", v.catalog_verify, name="catalog-verify"),
+    path("settings/requirements/<int:pk>/verify/", v.requirement_verify, name="requirement-verify"),
+]

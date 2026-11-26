@@ -1,0 +1,1 @@
+{% extends 'workspace/base.html' %}{% block content %}<h1>Операция не выполнена</h1><p>Данные не заменены фиктивным результатом.</p><ul>{% for issue in issues %}<li>{{ issue }}</li>{% endfor %}</ul>{% if assessment %}<a href="{% url 'assessment' assessment.pk %}">Вернуться к обследованию</a>{% else %}<a href="{% url 'workspace' %}">Рабочая область</a>{% endif %}{% endblock %}

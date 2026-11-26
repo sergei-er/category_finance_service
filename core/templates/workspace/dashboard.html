@@ -1,0 +1,21 @@
+{% extends 'workspace/base.html' %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow">Рабочая область</p><h1>{% if reports_only %}Отчёты{% else %}Обследования{% endif %}</h1></div>
+{% if is_admin and not reports_only %}<a class="button" href="{% url 'assessment-create' %}">＋ Создать обследование</a>{% endif %}</div>
+{% if not reports_only %}<div class="list-summary"><span>Всего <b>{{ assessment_counts.total }}</b></span><span>В работе <b>{{ assessment_counts.working }}</b></span><span>На проверке <b>{{ assessment_counts.review }}</b></span><span>Завершены <b>{{ assessment_counts.frozen }}</b></span></div>{% endif %}
+<section class="panel"><form method="get" class="list-toolbar">
+{% if reports_only %}<input type="hidden" name="view" value="reports">{% endif %}
+<input name="q" type="search" value="{{ query }}" placeholder="Найти обследование" aria-label="Поиск обследования">
+<select name="state" aria-label="Статус"><option value="">Все статусы</option>{% for value,label in state_options %}<option value="{{ value }}"{% if selected_state == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select><button class="secondary">Найти</button>
+</form><div class="table-scroll"><table class="registry">
+<thead><tr><th>Наименование</th><th>Область обследования</th><th>Период</th><th>Участники</th><th>{% if reports_only %}Результат{% else %}Статус{% endif %}</th><th></th></tr></thead>
+<tbody>{% for a in assessments %}<tr>
+<td><a class="strong" href="{% url 'assessment' a.pk %}">{{ a.title }}</a>{% if a.catalog.synthetic %}<small class="demo-label">Учебное обследование</small>{% endif %}</td>
+<td>{% for link in a.contour_links.all %}<span class="contour-tag">{{ link.name_snapshot }} · {{ link.level_snapshot }} ур.</span>{% empty %}{{ a.contour.name }}{% endfor %}</td>
+<td class="nowrap">{{ a.period_start|date:'d.m.Y' }}<small>по {{ a.period_end|date:'d.m.Y' }}</small></td>
+<td>{{ a.employee|default:'Не назначен' }}<small>{{ a.reviewer|default:'Проверяющий не назначен' }}</small></td>
+<td>{% if reports_only %}<strong>{{ a.result_snapshot.data.result.result }}</strong>{% else %}<span class="status-badge status-{{ a.state }}">{{ a.get_state_display }}</span>{% endif %}</td>
+<td><a href="{% url 'assessment' a.pk %}?tab={% if reports_only %}report{% else %}scores{% endif %}">{% if reports_only %}Документы{% else %}Открыть{% endif %}</a></td>
+</tr>{% empty %}<tr><td colspan="6"><div class="empty-state">{% if reports_only %}Утверждённых отчётов пока нет.{% else %}Обследования не найдены.{% endif %}</div></td></tr>{% endfor %}</tbody>
+</table></div><div class="table-footer">Записей: {{ assessments|length }}</div></section>
+{% endblock %}

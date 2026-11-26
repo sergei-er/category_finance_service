@@ -1,0 +1,57 @@
+<form method="get" class="scope-bar">
+<input type="hidden" name="tab" value="scores">
+<label for="scope-area">Область оценки</label>
+<select id="scope-area" name="area"><option value="">Все расчётные области</option>{% for option in matrix_area_options %}<option value="{{ option.value }}"{% if matrix_filters.area == option.value %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select>
+<select name="contour" aria-label="Контур"><option value="">Все контуры</option>{% for option in matrix_contour_options %}<option value="{{ option.value }}"{% if matrix_filters.contour == option.value %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select>
+<button class="secondary">Применить</button>
+</form>
+<div class="workbench">
+<aside class="process-nav" aria-label="Процессы защиты"><h2>Процессы защиты</h2>
+<a href="?tab=scores{% if matrix_filters.area %}&amp;area={{ matrix_filters.area }}{% endif %}" class="section-link">Все меры</a>
+{% for process in process_navigation %}<a href="{{ process.url }}"{% if matrix_filters.process == process.process and matrix_filters.kind == 'selection' %} class="is-active"{% endif %}><span>{{ process.process }}</span>{{ process.title }}</a>{% endfor %}
+<a href="?tab=scores&amp;kind=management{% if matrix_filters.area %}&amp;area={{ matrix_filters.area }}{% endif %}" class="section-link{% if matrix_filters.kind == 'management' %} is-active{% endif %}">Организация и управление</a>
+<a href="?tab=scores&amp;kind=lifecycle{% if matrix_filters.area %}&amp;area={{ matrix_filters.area }}{% endif %}" class="section-link{% if matrix_filters.kind == 'lifecycle' %} is-active{% endif %}">Жизненный цикл АС</a>
+</aside>
+<section class="work-center" aria-label="Опросный лист">
+<div class="work-toolbar"><h2>Опросный лист <small>{{ matrix_filtered_count }} из {{ matrix_total }} мер</small></h2><div class="toolbar-buttons"><button type="button" class="secondary" data-expand="all">Развернуть все</button><button type="button" class="secondary" data-expand="none">Свернуть все</button></div></div>
+<form method="get" class="query-bar">
+<input type="hidden" name="tab" value="scores"><input type="hidden" name="area" value="{{ matrix_filters.area }}"><input type="hidden" name="contour" value="{{ matrix_filters.contour }}"><input type="hidden" name="kind" value="{{ matrix_filters.kind }}"><input type="hidden" name="process" value="{{ matrix_filters.process }}">
+<input type="search" name="q" value="{{ matrix_filters.q }}" aria-label="Поиск меры" placeholder="Код или содержание меры">
+<select name="status" aria-label="Статус ответа"><option value="">Все статусы</option>{% for option in matrix_status_options %}<option value="{{ option.value }}"{% if matrix_filters.status == option.value %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select>
+<select name="attention" aria-label="Особые отметки"><option value="">Все отметки</option><option value="remarks"{% if matrix_filters.attention == 'remarks' %} selected{% endif %}>С замечаниями</option><option value="changed"{% if matrix_filters.attention == 'changed' %} selected{% endif %}>Изменённые оценки</option><option value="excluded"{% if matrix_filters.attention == 'excluded' %} selected{% endif %}>Исключённые меры</option></select><button class="secondary">Найти</button>
+</form>
+{% for block in matrix_blocks %}
+<details class="measure-block" id="block-{{ block.key }}"{% if forloop.first or matrix_filters.process %} open{% endif %}>
+<summary><span class="block-title">{{ block.title }}<small>{{ block.area }} · {{ block.kind }}</small></span><span class="block-count">{{ block.answered }} / {{ block.total }} · {{ block.percent }}%{% if block.remarks %} · замечаний: {{ block.remarks }}{% endif %}</span><progress class="block-progress" value="{{ block.percent }}" max="100">{{ block.percent }}%</progress></summary>
+{% for group in block.groups %}
+<details class="measure-subgroup" id="group-{{ block.key }}-{{ forloop.counter }}" open><summary>{{ group.label }}</summary>
+<div class="table-scroll"><table class="measure-table"><thead><tr><th>Код меры</th><th>Содержание меры</th><th>Оценка</th><th>Свидетельства</th><th>Статус</th></tr></thead><tbody>
+{% for row in group.rows %}<tr id="measure-{{ row.item.pk }}">
+<td><strong>{{ row.item.snapshot.code }}</strong><small title="{{ row.mode_label }}">Тип: {{ row.mode }}</small></td>
+<td><details class="measure-card" id="card-{{ row.item.pk }}"><summary>{{ row.item.snapshot.text }}</summary>
+{% if is_employee and working %}
+<form method="post" action="{% url 'answer' row.item.pk %}" id="answer-{{ row.item.pk }}" class="measure-editor">
+{% csrf_token %}<input type="hidden" name="return_query" value="{{ return_query }}">
+<label for="text-{{ row.item.pk }}">Описание реализации</label><textarea id="text-{{ row.item.pk }}" name="text" required>{{ row.revision.text }}</textarea>
+<label for="sources-{{ row.item.pk }}">Источники свидетельств</label><textarea id="sources-{{ row.item.pk }}" name="sources">{{ row.revision.sources }}</textarea>
+<label for="reference-{{ row.item.pk }}">Раздел или пункт документа</label><input id="reference-{{ row.item.pk }}" name="reference" maxlength="250" value="{{ row.revision.answerevidence_set.first.reference }}">
+<label>Прикреплённые материалы</label>{% for file in files %}<label class="check-label"><input type="checkbox" name="files" value="{{ file.pk }}"{% if file in row.evidence %} checked{% endif %}>{{ file.original_name|default:file.title }}</label>{% empty %}<small>Файлы не загружены. Укажите документ, опрос или наблюдение в источниках.</small>{% endfor %}
+<label for="exclusion-{{ row.item.pk }}">Обоснование исключения</label><textarea id="exclusion-{{ row.item.pk }}" name="exclusion_reason">{{ row.revision.exclusion_reason }}</textarea>
+<label for="compensation-{{ row.item.pk }}">Компенсирующие меры</label><textarea id="compensation-{{ row.item.pk }}" name="compensation">{{ row.revision.compensation }}</textarea>
+<button type="submit">Сохранить ответ</button>
+</form>
+{% else %}<div class="measure-editor"><h4>Реализация</h4><p>{{ row.revision.text|default:'Ответ не заполнен'|linebreaksbr }}</p><h4>Источники</h4><p>{{ row.revision.sources|default:'Не указаны'|linebreaksbr }}</p>{% if row.decision %}<h4>Решение проверяющего</h4><p>{{ row.decision.reason }}</p>{% endif %}{% include 'workspace/partials/matrix_row_actions.html' %}</div>{% endif %}
+<p><small>{{ row.item.snapshot.citation }}</small></p>
+{% if row.revision %}<a href="{% url 'answer-history' row.item.pk %}">История ответа · версия {{ row.revision.number }}</a>{% endif %}
+</details></td>
+<td>{% if is_employee and working %}<select name="score" form="answer-{{ row.item.pk }}" aria-label="Оценка {{ row.item.snapshot.code }}" required><option value="">—</option><option value="0"{% if row.employee_score == 0 %} selected{% endif %}>0</option>{% if row.kind != 'selection' %}<option value="0.5"{% if row.employee_score == 0.5 %} selected{% endif %}>0,5</option>{% endif %}<option value="1"{% if row.employee_score == 1 %} selected{% endif %}>1</option></select>{% else %}<strong>{% if row.score != None %}{{ row.score }}{% elif row.employee_score != None %}{{ row.employee_score }}{% else %}—{% endif %}</strong>{% endif %}{% if row.changed %}<small>Сотрудник: {{ row.employee_score }}</small>{% endif %}</td>
+<td>{% for file in row.evidence %}<a href="{% url 'evidence-download' file.pk %}" title="{{ file.original_name }}">{{ file.original_name|truncatechars:23 }}</a>{% empty %}<small>{% if row.revision.sources %}Источник указан{% else %}—{% endif %}</small>{% endfor %}</td>
+<td><span class="status-badge status-{{ row.status }}">{{ row.status_label }}</span>{% if is_reviewer and row.revision %}{% if assessment.state == 'review' or assessment.state == 'agreement' %}<p><a href="{% url 'review' row.revision.pk %}">Рассмотреть</a></p>{% endif %}{% endif %}</td>
+</tr>{% endfor %}
+</tbody></table></div></details>{% endfor %}</details>
+{% empty %}<div class="empty-state">{% if matrix_total %}Меры по выбранным фильтрам не найдены.<p><a href="?tab=scores">Сбросить фильтры</a></p>{% else %}Анкета появится после передачи обследования на заполнение.{% endif %}</div>{% endfor %}
+</section>
+<aside class="progress-panel"><h2>Прогресс обследования</h2><div class="progress-body"><div><div class="progress-number"><span>Заполнено</span><strong>{{ answered_percent }}%</strong></div><progress value="{{ answered_percent }}" max="100"></progress><small>{{ matrix_counts.answered }} из {{ matrix_total }} мер</small></div>
+{% for process in process_navigation %}{% if process.total %}<div class="progress-row"><div><span>{{ process.title }}</span><strong>{{ process.percent }}%</strong></div><progress value="{{ process.percent }}" max="100"></progress></div>{% endif %}{% endfor %}
+<div class="result-box"><h3>Предварительный результат</h3>{% if run and run.result.result != None %}<p class="result-value">{{ run.result.result }}</p><small>Расчёт от {{ run.created_at|date:'d.m.Y H:i' }}</small>{% else %}<p class="muted">Не определён</p>{% if run.result.issues %}<small>{{ run.result.issues.0 }}</small>{% else %}<small>Требуются утверждённые ответы.</small>{% endif %}{% endif %}<a class="button secondary" href="?tab=calculation">Результаты</a><a class="button secondary" href="?tab=evidence">Свидетельства</a></div>
+</div></aside></div>

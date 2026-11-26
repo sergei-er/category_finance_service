@@ -1,0 +1,7 @@
+<div class="matrix-row-actions">
+  {% if is_employee and working %}<a href="{% url 'answer' row.item.pk %}">{% if row.revision %}Изменить ответ{% else %}Заполнить{% endif %}</a>{% endif %}
+  {% if row.revision %}
+  <a href="{% url 'answer-history' row.item.pk %}">История</a>
+  {% if is_reviewer and row.needs_review %}{% if assessment.state == 'review' or assessment.state == 'agreement' %}<a href="{% url 'review' row.revision.pk %}">Рассмотреть</a>{% endif %}{% endif %}
+  {% endif %}
+</div>

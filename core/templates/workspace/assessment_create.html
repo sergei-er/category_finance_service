@@ -1,0 +1,60 @@
+{% extends 'workspace/base.html' %}
+
+{% block title %}Карточка обследования — Внутренняя оценка{% endblock %}
+
+{% block content %}
+<p class="label">Новое обследование</p>
+<h1>Карточка и область оценки</h1>
+
+{% if previous %}
+<p class="notice">Новое обследование связано с <a href="{% url 'assessment' previous.pk %}">обследованием №{{ previous.pk }}</a> того же контура. Ответы, свидетельства и решения из прошлого обследования автоматически не переносятся.</p>
+{% endif %}
+
+<section class="card" aria-labelledby="organization-heading">
+  <h2 id="organization-heading">Организация</h2>
+  {% if form.organization %}
+  <strong>{{ form.organization.name }}</strong>
+  <p>{{ form.organization.description|linebreaksbr }}</p>
+  {% if form.organization.synthetic %}<p class="label">Синтетические данные для демонстрации</p>{% endif %}
+  {% else %}
+  <p>Профиль организации ещё не заполнен. Администратор задаёт его и создаёт контуры в настройках.</p>
+  {% endif %}
+</section>
+
+<form method="post" class="editor">
+  {% csrf_token %}
+  <input type="hidden" name="mode" value="{{ form.mode }}">
+  {{ form.non_field_errors }}
+
+  <h2>Карточка</h2>
+  <p>{{ form.title.label_tag }}{{ form.title }}{{ form.title.errors }}</p>
+  <p>{{ form.purpose.label_tag }}{{ form.purpose }}{{ form.purpose.errors }}</p>
+  <fieldset><legend>{{ form.contours.label }}</legend>{{ form.contours }}{{ form.contours.errors }}<p class="helptext">{{ form.contours.help_text }}</p></fieldset>
+  <fieldset><legend>{{ form.systems.label }}</legend>{{ form.systems }}{{ form.systems.errors }}</fieldset>
+  <p>{{ form.employee.label_tag }}{{ form.employee }}{{ form.employee.errors }}</p>
+  <p>{{ form.reviewer.label_tag }}{{ form.reviewer }}{{ form.reviewer.errors }}</p>
+  {% with contour=form.selected_contour %}
+    {% if contour %}
+    <div class="card"><strong>{{ contour.name }} · уровень {{ contour.level }}</strong><p>{{ contour.description|linebreaksbr }}</p></div>
+    {% endif %}
+  {% endwith %}
+  <p>{{ form.period_start.label_tag }}{{ form.period_start }}{{ form.period_start.errors }}</p>
+  <p>{{ form.period_end.label_tag }}{{ form.period_end }}{{ form.period_end.errors }}</p>
+
+  <h2>Каталог и состав анкеты</h2>
+  <p>{{ form.catalog.label_tag }}{{ form.catalog }}{{ form.catalog.errors }}<span class="helptext">{{ form.catalog.help_text }}</span></p>
+  <p>{{ form.scope.label_tag }}{{ form.scope }}{{ form.scope.errors }}<span class="helptext">{{ form.scope.help_text }}</span></p>
+  <fieldset>
+    <legend>{{ form.processes.label }}</legend>
+    {{ form.processes }}{{ form.processes.errors }}
+    <p class="helptext">{{ form.processes.help_text }}</p>
+  </fieldset>
+  <p><label for="{{ form.lifecycle_included.id_for_label }}">{{ form.lifecycle_included }}{{ form.lifecycle_included.label }}</label>{{ form.lifecycle_included.errors }}</p>
+  <p>{{ form.lifecycle_reason.label_tag }}{{ form.lifecycle_reason }}{{ form.lifecycle_reason.errors }}</p>
+
+  <div class="actions">
+    <button type="submit">Создать обследование</button>
+    <a href="{% url 'workspace' %}">К реестру обследований</a>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'workspace/base.html' %}{% block content %}
+<p class="breadcrumb"><a href="{% url 'assessment' run.assessment_id %}?tab=calculation">Обследование</a> / Результаты</p>
+<div class="page-heading"><h1>Результаты оценки</h1>{% if run.inputs.synthetic %}<span class="demo-label">Учебное обследование</span>{% endif %}</div>
+<section class="panel"><div class="section-toolbar"><h2>Показатели процессов</h2><small>{{ run.created_at|date:'d.m.Y H:i' }}</small></div>
+{% if result.status == 'undefined' %}<div class="notice">Общий результат не определён.{% for issue in result.issues %}<p>{{ issue }}</p>{% endfor %}</div>{% else %}<p class="metric">Итоговая оценка: {{ result.result }}</p>{% endif %}
+<table><thead><tr><th>Процесс</th><th>Выбор мер</th><th>Планирование</th><th>Реализация</th><th>Контроль</th><th>Совершенствование</th><th>Оценка</th><th>Уровень соответствия</th></tr></thead><tbody>
+{% for process in result.processes %}<tr><td>{{ process.process }}</td><td>{{ process.selection|default_if_none:'По группам' }}</td>{% for value in process.directions %}<td>{{ value|default_if_none:'—' }}</td>{% endfor %}<td><strong>{{ process.value }}</strong></td><td>{{ process.quality }}</td></tr>{% endfor %}</tbody></table>
+<p>Учтено нарушений: {{ result.z }} · Жизненный цикл: {% if not result.lifecycle_included %}не оценивается{% elif result.lifecycle != None %}{{ result.lifecycle }}{% else %}по группам{% endif %}</p></section>
+{% include 'workspace/partials/area_results.html' %}
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'workspace/base.html' %}
+{% block title %}Организация{% endblock %}
+{% block content %}
+<div class="page-heading"><h1>{{ profile.short_name|default:profile.name }}</h1></div>
+<nav class="assessment-tabs" aria-label="Разделы организации">
+  <a href="?tab=general"{% if active_tab == 'general' %} class="is-active"{% endif %}>Общие сведения</a>
+  <a href="?tab=employees"{% if active_tab == 'employees' %} class="is-active"{% endif %}>Сотрудники</a>
+  <a href="?tab=systems"{% if active_tab == 'systems' %} class="is-active"{% endif %}>Системы и контуры</a>
+  <a href="?tab=assessments"{% if active_tab == 'assessments' %} class="is-active"{% endif %}>Обследования</a>
+</nav>
+{% if active_tab == 'general' %}
+<section><dl class="assessment-facts">
+  <div><dt>Полное наименование</dt><dd>{{ profile.name }}</dd></div>
+  <div><dt>Сокращённое наименование</dt><dd>{{ profile.short_name|default:'—' }}</dd></div>
+  <div><dt>ИНН</dt><dd>{{ profile.inn|default:'—' }}</dd></div>
+  <div><dt>Тип</dt><dd>{{ profile.organization_type|default:'—' }}</dd></div>
+  <div><dt>Юридический адрес</dt><dd>{{ profile.legal_address|default:'—' }}</dd></div>
+  <div><dt>Ответственный за анкеты</dt><dd>{{ profile.questionnaire_owner|default:'—' }}</dd></div>
+  <div><dt>Согласующий результаты</dt><dd>{{ profile.result_approver|default:'—' }}</dd></div>
+</dl>{% if is_admin %}<a class="button" href="{% url 'organization-edit' %}">Редактировать</a>{% endif %}</section>
+{% elif active_tab == 'employees' %}
+<section><div class="section-toolbar"><form method="get"><input type="hidden" name="tab" value="employees"><input name="q" value="{{ query }}" placeholder="Поиск сотрудников"><button>Найти</button></form>{% if is_admin %}<a class="button" href="{% url 'employee-create' %}">Добавить сотрудника</a>{% endif %}</div>
+<div class="table-scroll"><table><thead><tr><th>ФИО</th><th>Должность</th><th>Подразделение</th><th>Контакты</th><th>Статус</th><th></th></tr></thead><tbody>{% for employee in employees %}<tr><td>{{ employee }}</td><td>{{ employee.position }}</td><td>{{ employee.department|default:'—' }}</td><td>{{ employee.contact|default:'—' }}</td><td>{{ employee.archived|yesno:'Архив,Активен' }}</td><td>{% if is_admin %}<a href="{% url 'employee-edit' employee.pk %}">Изменить</a>{% if not employee.archived %}<form class="inline" method="post" action="{% url 'employee-archive' employee.pk %}">{% csrf_token %}<button class="link-button">В архив</button></form>{% endif %}{% endif %}</td></tr>{% empty %}<tr><td colspan="6">Сотрудники не добавлены.</td></tr>{% endfor %}</tbody></table></div></section>
+{% elif active_tab == 'systems' %}
+<section><div class="section-toolbar"><h2>Контуры безопасности</h2>{% if is_admin %}<a class="button" href="{% url 'contour-create' %}">Добавить контур</a>{% endif %}</div><div class="table-scroll"><table><thead><tr><th>Идентификатор</th><th>Наименование</th><th>Уровень</th><th>Систем</th></tr></thead><tbody>{% for contour in contours %}<tr><td>{{ contour.code|default:contour.pk }}</td><td>{{ contour.name }}</td><td>{{ contour.level }}</td><td>{{ contour.information_systems.count }}</td></tr>{% endfor %}</tbody></table></div>
+<div class="section-toolbar"><h2>Информационные системы</h2>{% if is_admin %}<a class="button" href="{% url 'system-create' %}">Добавить систему</a>{% endif %}</div><div class="table-scroll"><table><thead><tr><th>Наименование</th><th>Назначение</th><th>Разработчик</th><th>Ответственный</th><th>Контур</th><th></th></tr></thead><tbody>{% for system in systems %}<tr><td>{{ system.name }}</td><td>{{ system.purpose|truncatechars:80 }}</td><td>{{ system.developer|default:'—' }}</td><td>{{ system.responsible_employee|default:system.responsible_department|default:'—' }}</td><td>{{ system.contour.name }}</td><td>{% if is_admin %}<a href="{% url 'system-edit' system.pk %}">Изменить</a>{% endif %}</td></tr>{% empty %}<tr><td colspan="6">Системы не добавлены.</td></tr>{% endfor %}</tbody></table></div></section>
+{% else %}
+<section><div class="section-toolbar"><h2>Обследования</h2>{% if is_admin %}<a class="button" href="{% url 'assessment-create' %}">Создать обследование</a>{% endif %}</div><div class="table-scroll"><table><thead><tr><th>Наименование</th><th>Контуры</th><th>Период</th><th>Ответственный</th><th>Проверяющий</th><th>Статус</th></tr></thead><tbody>{% for assessment in assessments %}<tr><td><a href="{% url 'assessment' assessment.pk %}">{{ assessment.title }}</a></td><td>{% for contour in assessment.contours.all %}{{ contour.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td><td>{{ assessment.period_start }} — {{ assessment.period_end }}</td><td>{{ assessment.employee|default:'—' }}</td><td>{{ assessment.reviewer|default:'—' }}</td><td>{{ assessment.get_state_display }}</td></tr>{% empty %}<tr><td colspan="6">Обследований нет.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endif %}
+{% endblock %}

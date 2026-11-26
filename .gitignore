@@ -1,5 +1,7 @@
 # Локальные исходные материалы: не публикуем автоматически.
 /docs/sources/*
+# Полный текст нормативного каталога и локальные протоколы его сверки.
+/local-catalogs/
 
 # Секреты; пример настроек разрешён.
 .env
@@ -25,7 +27,6 @@ htmlcov/
 *.sqlite3-*
 *.log
 /media/
-/evidence/
 /staticfiles/
 /backups/
 *.dump
@@ -37,3 +38,6 @@ htmlcov/
 .aws/
 .codex/
 .DS_Store
+
+# Приватные локальные свидетельства Django.
+/private-evidence/
